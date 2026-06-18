@@ -1,21 +1,42 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"os"
 )
 
-func main() {
-	mux := http.NewServeMux() //<-- multiplexr to handel the respose
-	fileserver := http.FileServer(http.Dir("./ui/static"))
-	mux.Handle("/static/",http.StripPrefix("/static",fileserver))
-	mux.HandleFunc("/", home) // <-- router
-	mux.HandleFunc("/snippet/view", snippetView)
-	mux.HandleFunc("/snippet/create", snippetCreate)
-	log.Println("Starting server at 4000")
-	err := http.ListenAndServe(":4000", mux) // <-- this takes a handler
-	log.Fatal(err)
+type application struct {
+	infoLog  *log.Logger
+	errorLog *log.Logger
 }
+
+func main() {
+	// declare flag for the runtime
+	addr := flag.String("addr", ":4000", "Port address for the server")
+	// parse the flag
+	flag.Parse()
+
+	// custom log messages and levels
+	infoLog := log.New(os.Stdout, "INFO:\t", log.Ldate|log.Ltime)
+	errLog := log.New(os.Stderr, "ERROR: \t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	app := &application{
+		infoLog:  infoLog,
+		errorLog: errLog,
+	}
+
+	srv := &http.Server{
+		Addr:     *addr,
+		ErrorLog: errLog,
+		Handler:  app.routes(),
+	}
+	infoLog.Printf("Starting server at %s", *addr)
+	err := srv.ListenAndServe() // <-- this takes a handler
+	errLog.Fatal(err)
+}
+
 /*
 listen and serve takes a handler (http handler)
 cons:

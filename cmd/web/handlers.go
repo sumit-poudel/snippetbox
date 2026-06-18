@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 )
 
-func home(res http.ResponseWriter, req *http.Request) { // <-- handler to handel response
+func (app *application) home(res http.ResponseWriter, req *http.Request) { // <-- handler to handel response
 	if req.URL.Path != "/" {
-		http.NotFound(res, req)
+		app.notFound(res, *req)
 		return
 	}
 	files := []string{
@@ -18,28 +17,26 @@ func home(res http.ResponseWriter, req *http.Request) { // <-- handler to handel
 		"./ui/html/pages/home.tmpl.html",
 		"./ui/html/partial/navbar.tmpl.html",
 	}
-	ts,err := template.ParseFiles(files...)
-	if err != nil{
-		log.Println(err.Error())
-		http.Error(res,"internal server error",http.StatusInternalServerError)
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(res, err)
 		return
 	}
-	error := ts.ExecuteTemplate(res,"base",nil)
-	if error !=nil{
-		log.Println(error.Error())
-		http.Error(res,"internal server error",http.StatusInternalServerError)
+	error := ts.ExecuteTemplate(res, "base", nil)
+	if error != nil {
+		app.serverError(res, err)
 	}
 }
 
-func snippetView(res http.ResponseWriter, req *http.Request) {
+func (app *application) snippetView(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		res.Header().Set("Allow", http.MethodGet)
-		http.Error(res, "Method not allowed", http.StatusMethodNotAllowed) // <-- this works as both .write and .writeHeader
+		app.clientError(res, 405)
 		return
 	}
 	qry, err := strconv.Atoi(req.URL.Query().Get("id"))
 	if err != nil || qry < 0 {
-		http.NotFound(res,req)
+		app.notFound(res, *req)
 		return
 	}
 	res.Header().Set("content-type", "application/json")         // <-- this does case sanitation
@@ -47,7 +44,7 @@ func snippetView(res http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(res, "The number you query is %d...", qry)
 }
 
-func snippetCreate(res http.ResponseWriter, req *http.Request) {
+func (app *application) snippetCreate(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		res.Header().Set("Allow", http.MethodPost) // <-- must be called before .Write for custom status code
 		res.WriteHeader(http.StatusMethodNotAllowed)
