@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -12,22 +13,16 @@ import (
 )
 
 type application struct {
-	infoLog  *log.Logger
-	errorLog *log.Logger
+	logger *slog.Logger
 	snippets *models.SnippetModel
 }
 
 func main() {
-	// declare flag for the runtime
 	addr := flag.String("addr", ":4000", "Port address for the server")
 	dsn := flag.String("dsn", "host=localhost user=web password=pass dbname=snippetbox sslmode=disable", "MySQL data source name")
-	// parse the flag
 	flag.Parse()
 
-	// custom log messages and levels
-	infoLog := log.New(os.Stdout, "INFO:\t", log.Ldate|log.Ltime)
-	errLog := log.New(os.Stderr, "ERROR: \t", log.Ldate|log.Ltime|log.Lshortfile)
-
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	db, errr := openDB(*dsn)
 
 	if errr != nil {
@@ -36,19 +31,19 @@ func main() {
 	defer db.Close()
 
 	app := &application{
-		infoLog:  infoLog,
-		errorLog: errLog,
+		logger: logger,
 		snippets: &models.SnippetModel{DB: db},
 	}
 
 	srv := &http.Server{
 		Addr:     *addr,
-		ErrorLog: errLog,
+		ErrorLog: slog.NewLogLogger(logger.Handler(),slog.LevelError),
 		Handler:  app.routes(),
 	}
-	infoLog.Printf("Starting server at %s", *addr)
+	logger.Info("Starting server ", slog.String("address", *addr))
 	err := srv.ListenAndServe() // <-- this takes a handler
-	errLog.Fatal(err)
+	logger.Error(err.Error())
+	os.Exit(1)
 }
 
 func openDB(dns string) (*sql.DB, error) {
@@ -62,15 +57,3 @@ func openDB(dns string) (*sql.DB, error) {
 
 	return db, errr
 }
-
-/*
-listen and serve takes a handler (http handler)
-cons:
-	have to use conditons for responses
-	too much complicated for other then simple server
-
-So use a multiplexer that maps the route with handler or handler function
-handler and handler fuc are diff
-handler inherits the serveHTTP interface
-where as handler func is just a func which can be changed to handler using handlerFunc()
-*/

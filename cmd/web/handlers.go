@@ -7,11 +7,10 @@ import (
 	"strconv"
 )
 
-func (app *application) home(res http.ResponseWriter, req *http.Request) { // <-- handler to handel response
-	if req.URL.Path != "/" {
-		app.notFound(res, *req)
-		return
-	}
+func (app *application) home(res http.ResponseWriter, req *http.Request) {
+
+	res.Header().Add("Server", "Go")
+
 	files := []string{
 		"./ui/html/base.tmpl.html",
 		"./ui/html/pages/home.tmpl.html",
@@ -19,37 +18,30 @@ func (app *application) home(res http.ResponseWriter, req *http.Request) { // <-
 	}
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		app.serverError(res, err)
+		app.serverError(res, req, err)
 		return
 	}
 	error := ts.ExecuteTemplate(res, "base", nil)
 	if error != nil {
-		app.serverError(res, err)
+		app.serverError(res,req ,err)
 	}
 }
 
 func (app *application) snippetView(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		res.Header().Set("Allow", http.MethodGet)
-		app.clientError(res, 405)
-		return
-	}
-	qry, err := strconv.Atoi(req.URL.Query().Get("id"))
-	if err != nil || qry < 0 {
+	id, err := strconv.Atoi(req.PathValue("id"))
+	if err != nil || id < 0 {
 		app.notFound(res, *req)
 		return
 	}
-	res.Header().Set("content-type", "application/json")         // <-- this does case sanitation
-	res.Header()["X-XSS-PROTECTION"] = []string{"1; mode=block"} // <- if you dont want case sanitation
-	fmt.Fprintf(res, "The number you query is %d...", qry)
+	res.Header().Set("content-type", "application/json")
+	res.Header()["X-XSS-PROTECTION"] = []string{"1; mode=block"}
+	fmt.Fprintf(res, "The number is %d...", id)
 }
 
 func (app *application) snippetCreate(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		res.Header().Set("Allow", http.MethodPost) // <-- must be called before .Write for custom status code
-		res.WriteHeader(http.StatusMethodNotAllowed)
-		res.Write([]byte("Method not allowed"))
-		return
-	}
-	res.Write([]byte("Snippet created...")) // <- only this will send 200 status code
+	res.Write([]byte("create a snippet"))
+}
+
+func (app *application) snippetCreatePost(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte("Snippet created..."))
 }
