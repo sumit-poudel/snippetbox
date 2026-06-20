@@ -23,24 +23,9 @@ func (app *application) home(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	for _, snippets := range snippets {
-		fmt.Fprintf(res, "%+v\n", snippets)
-	}
-
-	// files := []string{
-	// 	"./ui/html/base.tmpl.html",
-	// 	"./ui/html/pages/home.tmpl.html",
-	// 	"./ui/html/partial/navbar.tmpl.html",
-	// }
-	// ts, err := template.ParseFiles(files...)
-	// if err != nil {
-	// 	app.serverError(res, req, err)
-	// 	return
-	// }
-	// error := ts.ExecuteTemplate(res, "base", nil)
-	// if error != nil {
-	// 	app.serverError(res, req, err)
-	// }
+	data := app.newTemplateDate(req);
+	data.Snippets=snippets
+	app.render(res, req, http.StatusOK, "home.tmpl.html", data)
 }
 
 func (app *application) snippetView(res http.ResponseWriter, req *http.Request) {
@@ -58,8 +43,9 @@ func (app *application) snippetView(res http.ResponseWriter, req *http.Request) 
 			app.serverError(res, req, err)
 		}
 	}
-
-	fmt.Fprintf(res, "%+v", snippet)
+	data :=app.newTemplateDate(req)
+	data.Snippet=snippet
+	app.render(res, req, http.StatusOK, "view.tmpl.html", data)
 }
 
 func (app *application) snippetCreate(res http.ResponseWriter, req *http.Request) {
