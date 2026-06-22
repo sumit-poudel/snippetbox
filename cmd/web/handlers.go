@@ -11,8 +11,6 @@ import (
 
 func (app *application) home(res http.ResponseWriter, req *http.Request) {
 
-	res.Header().Add("Server", "Go")
-
 	snippets, err := app.snippets.Latest()
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecords) {
@@ -23,8 +21,8 @@ func (app *application) home(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	data := app.newTemplateDate(req);
-	data.Snippets=snippets
+	data := app.newTemplateDate(req)
+	data.Snippets = snippets
 	app.render(res, req, http.StatusOK, "home.tmpl.html", data)
 }
 
@@ -43,8 +41,8 @@ func (app *application) snippetView(res http.ResponseWriter, req *http.Request) 
 			app.serverError(res, req, err)
 		}
 	}
-	data :=app.newTemplateDate(req)
-	data.Snippet=snippet
+	data := app.newTemplateDate(req)
+	data.Snippet = snippet
 	app.render(res, req, http.StatusOK, "view.tmpl.html", data)
 }
 
