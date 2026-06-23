@@ -12,10 +12,11 @@ type templateData struct {
 	CurrentYear int
 	Snippet     models.Snippet
 	Snippets    []models.Snippet
+	Form any
 }
 
 func humanDate(t time.Time) string {
-	return t.Format("01 Jan 2006 at 03:04 AM")
+	return t.Format("02 Jan 2006 at 03:04 AM")
 }
 
 var functions = template.FuncMap{

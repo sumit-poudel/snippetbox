@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"github.com/go-playground/form"
 )
 
 func (app *application) serverError(res http.ResponseWriter, req *http.Request, err error) {
@@ -43,8 +46,26 @@ func (app *application) render(res http.ResponseWriter, req *http.Request, statu
 	buff.WriteTo(res)
 }
 
-func (app *application) newTemplateDate(r *http.Request) templateData {
+func (app *application) newTemplateData(r *http.Request) templateData {
 	return templateData{
 		CurrentYear: time.Now().Year(),
 	}
 }
+
+func (app *application) decodePostForm(req *http.Request, dst any) error {
+	err := req.ParseForm()
+	if err != nil {
+		return err
+	}
+	err = app.formDecoder.Decode(dst, req.PostForm)
+	if err != nil {
+		if _, ok := errors.AsType[*form.InvalidDecoderError](err); ok {
+			panic(err)
+		}
+		return err
+	}
+	return err
+}
+
+
+
